@@ -1,0 +1,9 @@
+
+Starting Nmap 7.60 ( https://nmap.org ) at 2019-04-13 00:48 -03
+Nmap scan report for 192.168.0.15
+Host is up (0.0070s latency).
+Not shown: 999 closed ports
+PORT     STATE SERVICE
+1234/tcp open  hotline
+
+Nmap done: 1 IP address (1 host up) scanned in 0.14 seconds
