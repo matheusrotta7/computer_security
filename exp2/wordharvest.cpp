@@ -73,10 +73,20 @@ void visit_directory (DIR* dr, char base_dir[], unordered_set<string> &desired_e
                     fp_out = fopen ("result.txt", "a");
                     char cur_str[200];
                     while (fscanf(fp_in, "%s", cur_str) != EOF) {
-                        if (harvested_words.find(cur_str) == harvested_words.end()) { //then we know it's not on the hash
-                            fprintf(fp_out, "%s\n", cur_str);
-                            harvested_words.insert(cur_str); //don't forget to insert :)
+                        //iterate over current file
+                        //use same token logic to separate strings
+                        char* pch;
+                        pch = strtok (cur_str, "'! ,.-():;?_\"@");
+                        while (pch != NULL) {
+                            //if there are still strings, see if they can be inserted in the result file
+                            if (harvested_words.find(pch) == harvested_words.end()) { //then we know it's not on the hash
+                                fprintf(fp_out, "%s\n", pch);
+                                harvested_words.insert(pch); //don't forget to insert :)
+                            }
+                            pch = strtok (NULL, "'! ,.-():;?_\"@");
                         }
+
+
                     }
                     fclose(fp_in);
                     fclose(fp_out);
@@ -90,6 +100,9 @@ void visit_directory (DIR* dr, char base_dir[], unordered_set<string> &desired_e
 }
 
 int main() {
+
+
+    system("rm result.txt"); //just a little adjustment in case results already exists from previous executions
 
     //let's build a hash with the desired extensions
     unordered_set<string> desired_extensions;
