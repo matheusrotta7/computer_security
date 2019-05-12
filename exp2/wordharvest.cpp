@@ -1,7 +1,16 @@
 /**********************AUTHOR: MATHEUS ROTTA ALVES*************************
-PROGRAM'S MAIN LIMITATION: CALLING IT ON YOUR HOME DIR WILL PROBABLY CAUSE
-A STACK OVERFLOW.
-SO IT IS BETTER TO TEST IT ON A SMALL/MEDIUM SIZED FILE HIERARCHY
+NOW WORKING WITH BIG FILE HIERARCHIES! PROBLEM WAS ON THE CUR_STR BUFFER,
+IT WAS 200 BYTES LONG, BUT THE PROGRAM CAN ENCOUNTER STRINGS LONGER THAN
+THAT IN SOME WEIRD FILES, AND IT WOULD CAUSE A STACK OVERFLOW ERROR.
+---
+IDEA: PASS AS PARAMETER THE LONGEST BUFFER THE USER WANTS FOR THE STRINGS,
+WILL PROBABLY HAVE TO USE DYNAMIC ALLOCATION IN THIS CASE.
+---
+TRY RUNNING THE PROGRAM ON YOUR HOME DIR AND HARVESTING ALL THE TXT FILES!
+---
+BEHAVIORIAL DETAIL: THE PROGRAM WILL CONTINUE IF IT CAN'T OPEN SOME
+DIRECTORIES DURING THE RECURSION, AND WILL ALSO CONTINUE IF THE SAME
+HAPPENS WITH SOME FILES. IT REPORTS BOTH OF THESE TYPE OF OCCURENCES.
 ***************************************************************************/
 /**********************DESCRIPTION*****************************************
 THE PROGRAM WILL RECURSIVELY VISIT A FILE HIERARCHY AND OPEN THE FILES THAT
@@ -14,6 +23,11 @@ REPEATING WORDS AND HAVING PARSED THEM PROPERLY.
 #include <dirent.h>
 
 using namespace std;
+
+long int global_num_of_directories = 0;
+long int global_num_of_files_seen = 0;
+long int global_num_of_files_correct_extension = 0;
+long int global_num_of_words_harvested = 0;
 
 
 
@@ -33,6 +47,7 @@ void visit_directory (DIR* dr, char base_dir[], unordered_set<string> &desired_e
                 strcpy(aux, base_dir); //use aux so as to not ruin base_dir value
                 strcpy(next_dir_str, strcat(strcat(aux, "/"), de->d_name)); //next_dir_str = base_dir/next_dir
                 DIR* next_dir = opendir(next_dir_str);
+                global_num_of_directories++;
                 if (next_dir == NULL) {
                     printf("Could not open current directory: %s\n", next_dir_str);
                     continue;
@@ -45,6 +60,7 @@ void visit_directory (DIR* dr, char base_dir[], unordered_set<string> &desired_e
             //we must check their extensions before harvesting words
             //something bad is happening, strtok is trimming the de->d_name string
             //let's use an aux string to fix this
+            global_num_of_files_seen++;
             char aux_dname[200];
             strcpy (aux_dname, de->d_name);
             char* pch;
@@ -67,7 +83,8 @@ void visit_directory (DIR* dr, char base_dir[], unordered_set<string> &desired_e
                 if (desired_extensions.find(save_pch) != desired_extensions.end()) {
                     //then it is a desired one
                     //let's only report it for this time:
-                    printf("The file %s is a desired one, because it has the extension %s\n", de->d_name, save_pch);
+                    global_num_of_files_correct_extension++;
+                    // printf("The file %s is a desired one, because it has the extension %s\n", de->d_name, save_pch);
                     //let's open the file and parse it
                     //first we need to assemble the full path (full_name)
                     char aux[200];
@@ -79,11 +96,11 @@ void visit_directory (DIR* dr, char base_dir[], unordered_set<string> &desired_e
                     fp_in = fopen (full_name, "r");
                     if (fp_in == NULL) {
                         printf("tried to open file %s, but it failed\n", full_name);
-                        printf("ABORTING...\n");
-                        exit(0);
+                        printf("CONTINUING...\n");
+                        continue;
                     }
                     fp_out = fopen (output_file, "a");
-                    char cur_str[200];
+                    char cur_str[10000];
                     while (fscanf(fp_in, "%s", cur_str) != EOF) {
                         //iterate over current file
                         //use same token logic to separate strings
@@ -94,6 +111,7 @@ void visit_directory (DIR* dr, char base_dir[], unordered_set<string> &desired_e
                             if (harvested_words.find(pch) == harvested_words.end()) { //then we know it's not on the hash
                                 fprintf(fp_out, "%s\n", pch);
                                 harvested_words.insert(pch); //don't forget to insert :)
+                                global_num_of_words_harvested++;
                             }
                             pch = strtok (NULL, "'! ,.-():;?_\"@");
                         }
@@ -104,7 +122,7 @@ void visit_directory (DIR* dr, char base_dir[], unordered_set<string> &desired_e
                     fclose(fp_out);
                 }
                 else {
-                    printf("The file %s is NOT a desired one, because it has the extension %s\n", de->d_name, save_pch);
+                    // printf("The file %s is NOT a desired one, because it has the extension %s\n", de->d_name, save_pch);
                 }
             }
         }
@@ -114,7 +132,7 @@ void visit_directory (DIR* dr, char base_dir[], unordered_set<string> &desired_e
 
 int main(int argc, char *argv[]) {
 
-    cout << "Number of arguments: " << argc << '\n';
+    // cout << "Number of arguments: " << argc << '\n';
 
     //we should receive 5 or 7 arguments, nothing more, nothing less
     if (!(argc == 5 || argc == 7)) {
@@ -200,6 +218,7 @@ int main(int argc, char *argv[]) {
 
     // opendir() returns a pointer of DIR type.
     DIR* dr = opendir(directory); //opening desired directory
+    global_num_of_directories++;
 
     if (dr == NULL) {  // opendir returns NULL if couldn't open directory
         printf("Could not open directory %s\n", directory);
@@ -216,7 +235,14 @@ int main(int argc, char *argv[]) {
 
     closedir(dr);
 
-
+    /******stats*******/
+    cout << "\n\n";
+    cout << "******************STATS*******************\n\n";
+    cout << "Number of directories visited: " << global_num_of_directories << '\n';
+    cout << "Number of files 'seen': " << global_num_of_files_seen << '\n';
+    cout << "Number of files with the correct extension: " << global_num_of_files_correct_extension << '\n';
+    cout << "Number of words harvested: " << global_num_of_words_harvested << '\n';
+    cout << "\n***************END OF STATS****************\n\n";
 
 
     return 0;
