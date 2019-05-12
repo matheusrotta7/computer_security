@@ -1,3 +1,15 @@
+/**********************AUTHOR: MATHEUS ROTTA ALVES*************************
+PROGRAM'S MAIN LIMITATION: CALLING IT ON YOUR HOME DIR WILL PROBABLY CAUSE
+A STACK OVERFLOW.
+SO IT IS BETTER TO TEST IT ON A SMALL/MEDIUM SIZED FILE HIERARCHY
+***************************************************************************/
+/**********************DESCRIPTION*****************************************
+THE PROGRAM WILL RECURSIVELY VISIT A FILE HIERARCHY AND OPEN THE FILES THAT
+MATCH THE EXTENSION PASSED AS PARAMETER BY THE PERSON WHO EXECUTED IT.
+AFTER OPENING IT WILL OUTPUT THE RESULT TO THE SPECIFIED FILE, WITHOUT
+REPEATING WORDS AND HAVING PARSED THEM PROPERLY.
+**************************************************************************/
+
 #include <bits/stdc++.h>
 #include <dirent.h>
 
@@ -139,7 +151,7 @@ int main(int argc, char *argv[]) {
                     pch = strtok (argv[2*i+2], ":");
                     while (pch != NULL) {
                         desired_extensions.insert(pch);
-                        pch = strtok (NULL, ".");
+                        pch = strtok (NULL, ":");
                     }
                 }
                 else {
