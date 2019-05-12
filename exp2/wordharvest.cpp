@@ -5,7 +5,7 @@ using namespace std;
 
 
 
-void visit_directory (DIR* dr, char base_dir[], unordered_set<string> &desired_extensions, unordered_set<string> &harvested_words) {
+void visit_directory (DIR* dr, char base_dir[], unordered_set<string> &desired_extensions, unordered_set<string> &harvested_words, char output_file[]) {
 
     struct dirent* de;  // Pointer for directory entry
 
@@ -23,10 +23,10 @@ void visit_directory (DIR* dr, char base_dir[], unordered_set<string> &desired_e
                 DIR* next_dir = opendir(next_dir_str);
                 if (next_dir == NULL) {
                     printf("Could not open current directory: %s\n", next_dir_str);
-                    return;
+                    continue;
                 }
                 // printf("making recursive call to visit directory: %s\n", next_dir_str);
-                visit_directory (next_dir, next_dir_str, desired_extensions, harvested_words);
+                visit_directory (next_dir, next_dir_str, desired_extensions, harvested_words, output_file);
             }
         }
         else if ((int)de->d_type == 8) { //it's a file
@@ -70,7 +70,7 @@ void visit_directory (DIR* dr, char base_dir[], unordered_set<string> &desired_e
                         printf("ABORTING...\n");
                         exit(0);
                     }
-                    fp_out = fopen ("result.txt", "a");
+                    fp_out = fopen (output_file, "a");
                     char cur_str[200];
                     while (fscanf(fp_in, "%s", cur_str) != EOF) {
                         //iterate over current file
@@ -99,17 +99,86 @@ void visit_directory (DIR* dr, char base_dir[], unordered_set<string> &desired_e
     }
 }
 
-int main() {
+
+int main(int argc, char *argv[]) {
+
+    cout << "Number of arguments: " << argc << '\n';
+
+    //we should receive 5 or 7 arguments, nothing more, nothing less
+    if (!(argc == 5 || argc == 7)) {
+        end:
+        cout << "Usage: wordharvest -d search_dir -o output_file\n";
+        cout << "Optional: wordharvest -e file_extension1:file_extension2:file_extension3... -d search_dir -o output_file\n";
+        cout << "Default file extensions: .txt and .text\n";
+        return 0;
+    }
+    // for (int i = 0; i < argc; i++) {
+    //
+    // }
+    int num_flags = (argc - 1)/2;
 
 
-    system("rm result.txt"); //just a little adjustment in case results already exists from previous executions
+    bool provided_d = false;
+    bool provided_o = false;
 
     //let's build a hash with the desired extensions
     unordered_set<string> desired_extensions;
-    desired_extensions.insert("text");
-    desired_extensions.insert("txt");
-    desired_extensions.insert("doc");
-    desired_extensions.insert("asc");
+    // desired_extensions.insert("text");
+    // desired_extensions.insert("txt");
+    // desired_extensions.insert("doc");
+    // desired_extensions.insert("asc");
+
+    char directory[200];
+    char output_file[200];
+
+    for (int i = 0; i < num_flags; i++) {
+        if (strlen(argv[2*i+1]) == 2) {
+            if (argv[2*i+1][1] == 'e') {
+                if (strlen(argv[2*i+2]) > 1) {
+                    char* pch;
+                    pch = strtok (argv[2*i+2], ":");
+                    while (pch != NULL) {
+                        desired_extensions.insert(pch);
+                        pch = strtok (NULL, ".");
+                    }
+                }
+                else {
+                    goto end;
+                }
+            }
+            else if (argv[2*i+1][1] == 'd') {
+                strcpy(directory, argv[2*i+2]);
+                provided_d = true;
+            }
+            else if (argv[2*i+1][1] == 'o') {
+                strcpy(output_file, argv[2*i+2]);
+                provided_o = true;
+            }
+            else {
+                goto end;
+            }
+        }
+        else {
+            goto end;
+        }
+    }
+    if (!(provided_d && provided_o)) {
+        goto end;
+    }
+    if (desired_extensions.size() == 0) {
+        goto end;
+    }
+
+
+    char touch_str[200];
+    strcpy(touch_str, "touch ");
+    system(strcat(touch_str, output_file));
+
+    char rm_str[200];
+    strcpy(rm_str, "rm ");
+    system(strcat(rm_str, output_file));
+
+
 
     //let's build another hash with the words we have already encountered
     //it will be used as criteria to know whether to add word to result file or not
@@ -118,18 +187,17 @@ int main() {
 
 
     // opendir() returns a pointer of DIR type.
-    DIR* dr = opendir("."); //opening current directory
+    DIR* dr = opendir(directory); //opening desired directory
 
     if (dr == NULL) {  // opendir returns NULL if couldn't open directory
-        printf("Could not open current directory" );
+        printf("Could not open directory %s\n", directory);
+        printf("ABORTING...\n");
         return 0;
     }
 
     // Refer http://pubs.opengroup.org/onlinepubs/7990989775/xsh/readdir.html
     // for readdir()
-    char initial_base_dir[100];
-    strcpy(initial_base_dir, ".");
-    visit_directory (dr, initial_base_dir, desired_extensions, harvested_words);
+    visit_directory (dr, directory, desired_extensions, harvested_words, output_file);
 
     // vector<struct dirent*> to_be_visitted;
 
