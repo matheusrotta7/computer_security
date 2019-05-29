@@ -1,3 +1,13 @@
+/*Author: Matheus Rotta Alves
+Description: bruteforces a zip file given a dictionary files
+Method: very naive method, uses bash commands to try to unzip and
+stores the output in a log file (log.txt), that is checked every time
+to see if the password was correct based on the unzip output
+Compile with: g++ bruteforcezip.cpp -o bfzip
+usage: ./bfzip -l dictfile.txt -f zipfile.zip
+TODO: remove undesired output from stdout*/
+
+
 #include <bits/stdc++.h>
 
 using namespace std;
@@ -8,16 +18,40 @@ int main (int argc, char** argv) {
     //            https://stackoverflow.com/questions/14392525/passing-arguments-to-an-interactive-program-non-interactively
     //your linux will need script and unzip commands in order to run this bruteforce
     //the alternative to this implementation is to reimplement the decryption used in unzip following their guidelines (https://pkware.cachefly.net/webdocs/casestudies/APPNOTE.TXT) see section 6.1
-    //that would be much better because there would be no system call overhead, but
-    //that would take quite a good amount of work, I will look into it :)
-    //  ./bfzip
+    //that would be much better because there would be no system call overhead, but it would take more time to implement
+
 
     char sys_call[400];
     char password[100];
     char cur_str[100];
     char zipfile[100];
-    strcpy(zipfile, argv[4]);
-    FILE* fp_dictionary = fopen(argv[2], "r");
+    char dictfile[100];
+    if (argc != 5) {
+        cout << "usage: ./bfzip -l dictfile.txt -f zipfile.zip\n";
+    }
+    if (strcmp(argv[1], "-l") == 0) { //l is the dictionary file
+        strcpy(dictfile, argv[2]);
+        if (strcmp(argv[3], "-f") == 0) { //f is the zip file
+            strcpy(zipfile, argv[4]);
+        }
+        else {
+            cout << "usage: ./bfzip -l dictfile.txt -f zipfile.zip\n";
+        }
+    }
+    else if (strcmp(argv[1], "-f") == 0) {
+        strcpy(zipfile, argv[2]);
+        if (strcmp(argv[3], "-l") == 0) {
+            strcpy(dictfile, argv[4]);
+        }
+        else {
+            cout << "usage: ./bfzip -l dictfile.txt -f zipfile.zip\n";
+        }
+    }
+    else {
+        cout << "usage: ./bfzip -l dictfile.txt -f zipfile.zip\n";
+    }
+
+    FILE* fp_dictionary = fopen(dictfile, "r");
     if (fp_dictionary == NULL) {
         cout << "The program was unable to open the dictionary file\nAborting...\n";
         return 1;
